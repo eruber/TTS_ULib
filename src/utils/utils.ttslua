@@ -1,0 +1,15 @@
+--- Miscellaneous functions to be moved else where some day
+-- @module utils
+-- @license MIT
+-- @author E.R. Uber
+
+--- Convert a color vector to a string
+-- @param cv Color Vector
+-- @treturn string Color Vector as a string
+function color2string(cv)
+    if #cv == 4 then
+        return string.format("r: %.2f g: %.2f b: %.2f a: %.2f", cv[1], cv[2], cv[3], cv[4])
+    else
+        return string.format("r: %.2f g: %.2f b: %.2f", cv[1], cv[2], cv[3])
+    end
+end

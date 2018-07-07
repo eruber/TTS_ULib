@@ -1,0 +1,43 @@
+Dev Notes
+---------
+Using Lua for Windows (LfW) which comes with Lua 5.1.
+
+We might have to investigate adding Lua 5.2 because I think Tabletop Simulator
+ships with a Moonlight (Lua made with .Net) that is compatible with Lua 5.2.
+
+Anyway, LfW installs to C:\Program Files (x86)\Lua\5.1 and comes with a lot of docs.
+
+Going to use LDoc (Not LuaDoc) for documenting Lua API code:
+https://github.com/stevedonovan/LDoc
+
+LDoc documentation: https://stevedonovan.github.io/ldoc/manual/doc.md.html
+
+LDoc has a dependency on the Lua Penlight library and LauFileSystem, but both
+of these are included with LfW.
+
+LDoc from GitHub installed at: D:\Devel\_lua_tabletopsim\LDoc-master
+
+As per LDoc readme, created both an executable alias and a batch file alias to
+call it:
+
+cd docs
+
+D:\Devel\_lua_tabletopsim\_my_dev\TTS_ULib\docs>echo lua D:\Devel\_lua_tabletopsim\LDoc-master\ldoc.lua $* > ldoc
+
+D:\Devel\_lua_tabletopsim\_my_dev\TTS_ULib\docs>echo lua D:\Devel\_lua_tabletopsim\LDoc-master\ldoc.lua %* > ldoc.bat
+
+Usage docs for LDoc is at: https://stevedonovan.github.io/ldoc/manual/doc.md.html
+
+Eventually would like to develop my own customized templates and style sheets
+for LDoc; for example:
+
+    http://nilnor.github.com/textui/docs/
+    http://lua4z.com/doc/
+    http://stevedonovan.github.com/winapi/api.html
+
+LDoc comes with three extra themes; ‘pale’ for those who like whitespace,
+‘one’ for one-column output, and ‘fixed’ for a fixed navigation bar down the left side.
+
+Since 1.3, LDoc allows the use of colons instead of @. However, you must either
+use the --colon flag or set colon=true in your config.ld.
+
