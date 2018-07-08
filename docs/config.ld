@@ -1,13 +1,18 @@
 project='TTS_ULib'
 title='TTS_ULib Documentation'
-description='A Tabletop Simulator Library of Useful Lua Packages, Modules, and Scripts'
--- format = 'markdown|discount|lunamark|plain|backticks'
+description='TTS_ULib 1.0.0'
+full_description='The documentation is available at @{01-intro.md|here}.'
 format='discount'
--- backtick_references=false
+-- style='!fixed'
 file='../src/'
-dir='out'
-readme='readme.md'
--- colon=true
+dir='api'
+use_markdown_titles = true
+sort_modules=true
+topics = 'manual'
+examples = {'../examples'}
 add_language_extension('ttslua','lua')
 prettify_files=true
-
+kind_names={topic='Manual'}
+-- Tag Aliases...
+alias("p", "param")
+not_luadoc = true

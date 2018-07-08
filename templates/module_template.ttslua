@@ -1,0 +1,31 @@
+--- <Summary Line>
+-- @module <MODULE_NAME>
+-- @curator <NAME> or @author <NAME>
+
+if not package.loaded['<MODULE_NAME>'] then
+    <MODULE_NAME> = {}
+    package.loaded['<MODULE_NAME>'] = <MODULE_NAME>
+
+    -- >> <function_1>
+
+    --- <Function summary>
+    -- @tparam <type> param_1_name <param description>
+    -- @tparam <type> param_2_name <param description>
+    -- @treturn int The limit count reached
+    <MODULE_NAME>.<function_1> = function(param_1_name, param_2_name)
+        -- code
+    end
+    -- << <function_1>
+    -- >> <function_2>
+
+    --- <Function summary>
+    -- @tparam <type> param_1_name <param description>
+    -- @tparam <type> param_2_name <param description>
+    -- @treturn int The limit count reached
+    <MODULE_NAME>.<function_2> = function(param_1_name, param_2_name)
+        -- code
+    end
+    -- << <function_2>
+
+end
+

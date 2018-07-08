@@ -1,18 +1,19 @@
 --- Output related functions
 -- @module output
--- @license MIT
--- @author E.R. Uber
+-- @curator E.R. Uber
 
 if not package.loaded['output'] then
     output = {}
     package.loaded['output'] = output
 
-    --- Recursively print arbitrary data structure
-    -- @tparam data struct A data structure like a table, etc
-    -- @tparam int limit Set limit (default 100) to stop infinite loops.
-    -- @tparam int indent Indents each line by this many spaces
+    -- >> rPrint
+
+    --- Recursively print arbitrary data structure.
+    -- @tparam data s A data structure like a table, etc
+    -- @tparam int l Set limit (default 100) to stop infinite loops.
+    -- @tparam int i Indents each line by this many spaces
     -- @treturn int The limit count reached
-    function output.rPrint = function(s, l, i)
+    output.rPrint = function(s, l, i)
         -- Original source from https://gist.github.com/stuby/5445834
         l = (l) or 100
         i = i or ""
@@ -26,6 +27,23 @@ if not package.loaded['output'] then
         end
         return l
     end
+
+    -- >> pSimpleDict
+
+    --- Prints a simple key/value pair dictionary with an optional header
+    -- @tparam table t Dictionary
+    -- @tparam string hdr Header Text (optional)
+    output.pSimpleDict = function(t, hdr)
+        indent = ""
+        if hdr ~= nil then
+            print(hdr)
+            indent = "   "
+        end
+        for k,v in pairs(t) do
+            print(indent .. k .. " : " .. tostring(v))
+        end
+    end
+
 
 end
 
