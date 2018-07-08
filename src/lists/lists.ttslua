@@ -1,10 +1,10 @@
 --- Functions that operate on tables that are lists of items with no keys specified.
--- @module list
+-- @module lists
 -- @author E.R. Uber
 
-if not package.loaded['list'] then
-    list = {}
-    package.loaded['list'] = list
+if not package.loaded['lists'] then
+    lists = {}
+    package.loaded['lists'] = lists
 
     -- >> list.concat
 
@@ -12,7 +12,7 @@ if not package.loaded['list'] then
     -- @tparam table list1 First list
     -- @tparam table list2 Second list
     -- @treturn table Concatenated list1
-    list.concat = function(list1, list2)
+    lists.concat = function(list1, list2)
         for i=1, #list2 do
             list1[#list1+1] = list2[i]
         end
@@ -36,7 +36,7 @@ if not package.loaded['list'] then
     -- @tparam int last Index of last item in list
     -- @tparam int step Defaults to 1
     -- @treturn table Sliced table
-    list.slice = function(list, first, last, step)
+    lists.slice = function(list, first, last, step)
       local sliced = {}
 
       for i = first or 1, last or #tbl, step or 1 do
@@ -52,7 +52,7 @@ if not package.loaded['list'] then
     --- Transform a list into a boolean set - used in itemsInList()
     -- @tparam table list A list-like table
     -- @treturn table A boolean table keyed by list items values of true
-    list.set = function(list)
+    lists.set = function(list)
         -- See: http://www.lua.org/pil/11.5.html
         local set = {}
         for _, l in ipairs(list) do set[l] = true end
@@ -66,7 +66,7 @@ if not package.loaded['list'] then
     -- @param item An item that might be in the list
     -- @param list A list-like table
     -- @return true if item is in list; false otherwise.
-    list.itemIsInList = function(item, list)
+    lists.itemIsInList = function(item, list)
         local list_set = list.set(list)
         return list_set[item] or false
     end
