@@ -1,0 +1,4 @@
+local test = require "testing"
+
+print(test._VERSION)
+
