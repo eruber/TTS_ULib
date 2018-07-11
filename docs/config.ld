@@ -4,7 +4,7 @@ description='TTS_ULib 1.0.0'
 full_description='The documentation is available at @{01-intro.md|here}.'
 format='discount'
 -- style='!fixed'
-file='../src/'
+file='../TTS_ULib/'
 dir='api'
 use_markdown_titles = true
 sort_modules=true
@@ -16,3 +16,4 @@ kind_names={topic='Manual'}
 -- Tag Aliases...
 alias("p", "param")
 not_luadoc = true
+wrap = true
