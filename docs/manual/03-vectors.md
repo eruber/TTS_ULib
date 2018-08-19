@@ -7,11 +7,11 @@ In Tabletop Simulator (TTS) a **Vector** is represented by a **Lua** table that 
 ###Duplicate Keys
 The Vector table will contain the keys `x`, `y`, `z` and/or `1`, `2`, `3`. The values associated with the letter and the numeric keys are duplicates of each other.
 
-Letter Key | Number Key 
- :--: | :--:
- x | 1
- y | 2
- z | 3
+    | Letter Key | Number Key |
+    | :--: | :--: |
+    | x | 1 |
+    | y | 2 |
+    | z | 3 |
 
 
 As an example, an object at coordinate X=5, Y=2, Z=-1 would return position vector that looks like this table:
@@ -39,11 +39,11 @@ Only one type of key, number or letter, is required. If both a are present in a 
 
 The range of values depend on the type of Vector you are using.
 
-Type | Description | Range
---- | --- | ---
-Position | A point in space. | Any number within the bounds of the world.
-Rotation | Angle, in degrees. | -180 to 180.
-Direction | Vector direction. | -1 to 1.
+    Type | Description | Range
+    --- | --- | ---
+    Position | A point in space. | Any number within the bounds of the world.
+    Rotation | Angle, in degrees. | -180 to 180.
+    Direction | Vector direction. | -1 to 1.
 
 ###Type Details
 
@@ -53,10 +53,10 @@ As mentioned previously, a Vector is used in TTS to represent a position, a rota
 
 X is right/left, Y is up/down, Z is forward/back. A positional Vector can be either world or local. Most of Tabletop Simulator's functions use world positional Vectors.
 
-Type | Description
--- | --
-World | The center of the instance is `{x=0, y=0, z=0}`. That is usually near the tabletop's center.
-Local | The center of the Object's model is `{x=0, y=0, z=0}`. The center of an Object is determined by the model's creator.
+    Type | Description
+    -- | --
+    World | The center of the instance is `{x=0, y=0, z=0}`. That is usually near the tabletop's center.
+    Local | The center of the Object's model is `{x=0, y=0, z=0}`. The center of an Object is determined by the model's creator.
 
 Note that translation between **World** and **Local** positions can be accomplished by using Object.positionToWorld() and Object.positionToLocal() calls in TTS scripts.
 

@@ -11,7 +11,6 @@
 local tablex = require 'pl.tablex'
 local utils = require 'pl.utils'
 local pretty = require 'pl.pretty'
-local path = require 'pl.path'
 local type,unpack = type,utils.pack
 local clock = os.clock
 local debug = require 'debug'
@@ -28,17 +27,6 @@ local function dump(x)
 end
 
 local test = {}
-
----- error handling for test results.
--- By default, this writes to stderr and exits the program.
--- Re-define this function to raise an error and/or redirect output
-function test.error_handler(file,line,got_text, needed_text,msg)
-    local err = io.stderr
-    err:write(path.basename(file)..':'..line..': assertion failed\n')
-    err:write("got:\t",got_text,'\n')
-    err:write("needed:\t",needed_text,'\n')
-    utils.quit(1,msg or "these values were not equal")
-end
 
 local function complain (x,y,msg,where)
     local i = debug.getinfo(3 + (where or 0))
