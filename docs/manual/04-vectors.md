@@ -1,4 +1,4 @@
-##Vector
+##Vectors
 In general a **Vector** is a quantity fully described by both a *magnitude* and a *direction*; while a **scalar** is a quantity that is fully described by only a *magnitude*.
 
 In Tabletop Simulator (TTS) a **Vector** is represented by a **Lua** table that is used to define a position, a rotation or a direction and it has duplicate keys.

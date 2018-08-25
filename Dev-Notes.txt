@@ -1,22 +1,53 @@
 Dev Notes
 ---------
-Using Lua for Windows (LfW) which comes with Lua 5.1.
-
-We might have to investigate adding Lua 5.2 because I think Tabletop Simulator
-ships with a Moonlight (Lua made with .Net) that is compatible with Lua 5.2.
-
-Anyway, LfW installs to C:\Program Files (x86)\Lua\5.1 and comes with a lot of docs.
-
-Going to use LDoc (Not LuaDoc) for documenting Lua API code:
-https://github.com/stevedonovan/LDoc
-
-LDoc documentation: https://stevedonovan.github.io/ldoc/manual/doc.md.html
+The LDoc tool for generating API documentation from Lua source code is using
+Lua for Windows (LfW) which is currently stuck on Lua 5.1.
 
 LDoc has a dependency on the Lua Penlight library and LauFileSystem, but both
 of these are included with LfW.
 
-LDoc from GitHub installed at: D:\Devel\_lua_tabletopsim\LDoc-master
+Usage docs for LDoc is at: https://stevedonovan.github.io/ldoc/manual/doc.md.html
 
+After using LDoc for awhile, found an issue and created an issue report, see
+https://github.com/stevedonovan/LDoc/issues/301.
+
+Have since fixed this issue in my own fork of LDoc, see https://github.com/eruber/LDoc.
+My local LDoc forked repo is at:
+D:\Devel\_lua_tabletopsim\__forks\LDoc
+
+The original LDoc from GitHub installed at: D:\Devel\_lua_tabletopsim\LDoc-master.
+This is the repo I forked.
+
+Need Lua 5.2
+------------
+Because Tabletop Simluator uses as its Lua interpreter MoonSharp 1.5.0 which
+implements Lua 5.2 features, I would like to execute Lua script testing using
+Lua 5.2. However, LfW is still stuck on Lua 5.1.
+
+So I am using a custom Lua build of Lua 5.2 for testing purposes, it does not
+currently build Penlight (an LDoc dependency) though it does have LauFileSystem,
+so that is why LDoc is still using Lua 5.1.
+
+I looked at LuaDist, but it too is stuck on Lua 5.1.
+
+See D:\Devel\_lua_on_windows\ReadMe.md for details on compling/building Lua 5.2,
+had to download and install the MinGW gcc compiler to do the build. To build
+everything do:
+
+    cd D:\Devel\_lua_on_windows\luabuild-master
+    build-all.bat
+
+This compiles/builds its output to:
+
+    D:\Devel\_lua_on_windows\luabuild-master\bin  -- lua interpreter exe, etc
+    D:\Devel\_lua_on_windows\luabuild-master\lua  -- pure lua modules here (I copyied the PenLight lua files here under pl)
+    D:\Devel\_lua_on_windows\luabuild-master\lib\5.2 -- static libraries (dll and a) files are here (like lfs.dll, winapi.dll, etc)
+
+Eventhough I copied the bin contents to C:\Program Files (x86)\Lua\5.2 and made duplicate exe files without the '52',
+the binaries are configured to look for libraries and lua modules at the above luabuild-master\lib\5.2 and \lua locations.
+
+Building API Docs with LDoc
+---------------------------
 As per LDoc readme, created both an executable alias and a batch file alias to
 call it:
 
@@ -27,6 +58,16 @@ D:\Devel\_lua_tabletopsim\_my_dev\TTS_ULib\docs>echo lua D:\Devel\_lua_tabletops
 D:\Devel\_lua_tabletopsim\_my_dev\TTS_ULib\docs>echo lua D:\Devel\_lua_tabletopsim\LDoc-master\ldoc.lua %* > ldoc.bat
 
 Usage docs for LDoc is at: https://stevedonovan.github.io/ldoc/manual/doc.md.html
+
+So to build the API docs:
+
+    1. cd docs
+    2. Ldoc . --verbose
+    or
+    2. make html
+    However, sometimes when LDoc throughs an error and it has been invoked from
+    the make.bat command, the console window closes, so I like to just use the
+    Ldoc . --verbose command.
 
 Eventually would like to develop my own customized templates and style sheets
 for LDoc; for example:
@@ -40,4 +81,6 @@ LDoc comes with three extra themes; ‘pale’ for those who like whitespace,
 
 Since 1.3, LDoc allows the use of colons instead of @. However, you must either
 use the --colon flag or set colon=true in your config.ld.
+
+-- E.R. Uber July-Aug 2018
 
