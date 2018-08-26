@@ -1,0 +1,82 @@
+-- An example of using the Set class
+package.path = '..\\TTS_ULib\\?.ttslua;' .. package.path
+
+require('Set')
+
+-- Create some sets to play with
+A = Set({1,2,3,4,5,'red'})
+B = Set({3,4,'red', 'blue'})
+C = Set({3.14, 2.7, 8.5})
+
+-- Testing individual membership in a set
+print("A:" .. A)
+if A[3] then
+    print("Set A contains a 3")
+else
+    print("Error, Set A should contain a 3")
+end
+
+print("B: " .. tostring(B))
+if B.red then
+    print("Set B contains a 'red' string")
+else
+    print("Error, Set B should contain a 'red' string")
+end
+if B['blue'] then
+    print("Set B contains a 'blue' string")
+else
+    print("Error, Set B should contain a 'blue' string")
+end
+
+-- Union
+D = A + B
+print("D = A + B")
+print("D: " .. D)
+
+-- Intersection
+E = A * B
+print("E = A * B")
+print("E: " .. E)
+
+-- Symmetric Intersection
+F = A ^ B
+print("F = A ^ B")
+print("F: " .. F)
+print("Length of Set F is: " .. #F )
+
+-- Disjoint
+if F % E then
+    print("Sets F and E are disjoint, no elements in common")
+else
+    print("Error, sets F and E should be disjoint")
+end
+
+-- Equality
+if F == E then
+    print("Error, sets F and E should be UNEQUAL")
+else
+    print("Sets F and E are NOT equal")
+end
+
+-- String conversion
+G = Set{'blue', 5,2,1}
+print("G: " .. G)
+if G == F then
+    print("Ssets G and F are EQUAL")
+else
+    print("Error, sets G and F should be equal")
+end
+
+if -F then
+    print("ERROR, set F should NOT be empty")
+else
+    print("Set F is not empty")
+end
+
+H = Set()
+print("H: " .. H)
+if -H then
+    print("Set H is empty")
+else
+    print("Error, Set H should be empty")
+end

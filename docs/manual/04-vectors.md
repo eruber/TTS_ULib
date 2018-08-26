@@ -7,11 +7,11 @@ In Tabletop Simulator (TTS) a **Vector** is represented by a **Lua** table that 
 ###Duplicate Keys
 The Vector table will contain the keys `x`, `y`, `z` and/or `1`, `2`, `3`. The values associated with the letter and the numeric keys are duplicates of each other.
 
-    | Letter Key | Number Key |
-    | :--: | :--: |
-    | x | 1 |
-    | y | 2 |
-    | z | 3 |
+| Letter Key | Number Key |
+| --------------| --------------- |
+| x                | 1 |
+| y                | 2 |
+| z                | 3 |
 
 
 As an example, an object at coordinate X=5, Y=2, Z=-1 would return position vector that looks like this table:

@@ -71,43 +71,6 @@ function TestMethod_union:TestUnion_06()
     LU.assertItemsEquals(elements(setC), {3,2,1})
 end
 
-TestMethod_concat = {}
-function TestMethod_concat:setUp()
-    self.setA = Set({1,2,3})
-    self.setB = Set({3,4,5,6})
-end
-function TestMethod_concat:TestConcat_01()
-    local setC = self.setA .. self.setB
-    LU.assertEquals(#setC, 6)
-    LU.assertItemsEquals(elements(setC), {6,5,4,3,2,1})
-end
-function TestMethod_concat:TestConcat_02()
-    local setC = self.setA .. 77
-    LU.assertEquals(#setC, 4)
-    LU.assertItemsEquals(elements(setC), {77,3,2,1})
-end
-function TestMethod_concat:TestConcat_03()
-    local setC = self.setA .. {'red', 3.14}
-    LU.assertEquals(#setC, 5)
-    LU.assertItemsEquals(elements(setC), {3,2,1,'red',3.14})
-end
-function TestMethod_concat:TestConcat_04()
-    local setC = 77 .. self.setA
-    LU.assertEquals(#setC, 4)
-    LU.assertItemsEquals(elements(setC), {77,3,2,1})
-end
-function TestMethod_concat:TestConcat_05()
-    local setC = {'red', 3.14} .. self.setA
-    LU.assertEquals(#setC, 5)
-    LU.assertItemsEquals(elements(setC), {3,2,1,'red',3.14})
-end
-function TestMethod_concat:TestConcat_06()
-    local setC = {} .. self.setA
-    LU.assertEquals(#setC, 3)
-    LU.assertItemsEquals(elements(setC), {3,2,1})
-end
-
-
 TestMethod_intersection = {}
 function TestMethod_intersection:setUp()
     self.setA = Set({1,2,3,4})
@@ -278,28 +241,22 @@ function TestEquality_01()
     LU.assertTrue(flag2)
 end
 
--- -- TestMethod_map = {}
--- -- function TestMethod_map:setUp()
--- --     self.setA = Set({1,2,3,4,5})
--- -- end
--- -- function TestMethod_map:Test_Map_01()
--- --     local function f(i)
--- --         local r = i * 2
--- --         return r
--- --     end
--- --     local setR = self.setA.map(f)
--- --     LU.assertEquals(#setR, 5)
--- --     LU.assertItemsEquals(setR.elements(), {2,6,4,8,10})
--- -- end
--- -- function TestMethod_map:Test_Map_02()
--- --     local function f(i)
--- --         local r = i - 1
--- --         return r
--- --     end
--- --     local setR = self.setA.map(f)
--- --     LU.assertEquals(#setR, 5)
--- --     LU.assertItemsEquals(setR.elements(), {0,1,2,3,4})
--- -- end
-
+TestConcat = {}
+function TestConcat:setUp()
+    self.setA = Set({'flour'})
+    self.setB = Set({'surgar'})
+end
+function TestConcat:TestConcat_01()
+    local s = "Set A: " .. self.setA
+    LU.assertStrMatches(s, "Set A: {flour}")
+end
+function TestConcat:TestConcat_02()
+    local s = self.setA .. " is a Set"
+    LU.assertStrMatches(s, "{flour} is a Set")
+end
+function TestConcat:TestConcat_03()
+    local s = self.setA .. self.setB
+    LU.assertStrMatches(s, "{flour}{surgar}")
+end
 
 os.exit(LU.LuaUnit.run('--verbose'))
