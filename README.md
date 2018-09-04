@@ -2,7 +2,7 @@
 
 Tabletop Simulator (TTS) Library of Lua code from one of two sources:
 
-1. Originally developed by the author
+1. Developed by the author
 2. Curated from various attributed sources
 
 # Lua Environment Outside of TTS
@@ -13,5 +13,5 @@ Will probably need a deployment script (written in Python or Lua itself) that wi
 
 # Testing
 
-C:\Users\ER\AppData\Roaming\Sublime Text 3\Packages\User\build
+Using LuaUnit for unit testing.
 
