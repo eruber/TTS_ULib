@@ -89,7 +89,7 @@ if not package.loaded['vectors'] then
     end
 
     -- -----------------------------------------------------------------------
-    -- Private functions
+    -- Private functions...
     -- -----------------------------------------------------------------------
 
     -- Verify that the xyz keys are present in the vector table v
@@ -261,7 +261,7 @@ if not package.loaded['vectors'] then
     end
 
     -- -----------------------------------------------------------------------
-    -- Public functions from this point...
+    -- Public functions...
     -- -----------------------------------------------------------------------
 
     --- Sum of two vectors
