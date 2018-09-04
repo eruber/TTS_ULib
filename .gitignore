@@ -40,4 +40,4 @@ luac.out
 *.hex
 
 # LDoc output
-docs/api
+#docs/api
