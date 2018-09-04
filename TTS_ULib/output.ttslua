@@ -1,0 +1,52 @@
+--- Output related functions
+-- @module output
+-- @curator E.R. Uber
+
+if type(package.loaded['output']) ~= 'table' then
+    package.loaded['output'] = nil
+end
+
+if not package.loaded['output'] then
+    output = {}
+    package.loaded['output'] = output
+
+    -- >> rPrint
+
+    --- Recursively print arbitrary data structure.
+    -- @tparam data s A data structure like a table, etc
+    -- @tparam int l Set limit (default 100) to stop infinite loops.
+    -- @tparam int i Indents each line by this many spaces
+    -- @treturn int The limit count reached
+    output.rPrint = function(s, l, i)
+        -- Original source from https://gist.github.com/stuby/5445834
+        l = (l) or 100
+        i = i or ""
+        if (l<1) then print "ERROR: Item limit reached."; return l-1 end;
+        local ts = type(s);
+        if (ts ~= "table") then print (i," ",ts," ",s); return l-1 end
+        print (i,ts);           -- print "table"
+        for k,v in pairs(s) do  -- print "[KEY] VALUE"
+            l = rPrint(v, l, i.."\t["..tostring(k).."]");
+            if (l < 0) then break end
+        end
+        return l
+    end
+
+    -- >> pSimpleDict
+
+    --- Prints a simple key/value pair dictionary with an optional header
+    -- @tparam table t Dictionary
+    -- @tparam string hdr Header Text (optional)
+    output.pSimpleDict = function(t, hdr)
+        indent = ""
+        if hdr ~= nil then
+            print(hdr)
+            indent = "   "
+        end
+        for k,v in pairs(t) do
+            print(indent .. k .. " : " .. tostring(v))
+        end
+    end
+
+end
+

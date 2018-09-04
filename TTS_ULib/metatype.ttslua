@@ -1,0 +1,30 @@
+------------------------------------------------------------------------------
+--- MetaType
+-- @classmod metatype
+-- @usage
+-- local object = setmetatable({}, { __type = 'xyzzy' })
+-- print(MetaType(object)) -- prints 'xyzzy'
+-- ---------------------------------------------------------------------------
+MetaType = {}
+
+setmetatable(MetaType, {
+    __call = function(cls, ...) return cls.type(...) end,
+    })
+
+
+MetaType.type = function(value)
+    local value_mt = getmetatable(value)
+    if value_mt then
+        local type_ = value_mt.__type
+        if type(type_) == 'function' then
+            type_ = type_(value)
+        end
+        if type_ then
+            return type_
+        else
+            return type(value)
+        end
+    else
+        return type(value)
+    end
+end

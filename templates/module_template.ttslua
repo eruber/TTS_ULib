@@ -2,6 +2,10 @@
 -- @module <MODULE_NAME>
 -- @curator <NAME> or @author <NAME>
 
+if type(package.loaded['<MODULE_NAME>']) ~= 'table' then
+    package.loaded['<MODULE_NAME>'] = nil
+end
+
 if not package.loaded['<MODULE_NAME>'] then
     <MODULE_NAME> = {}
     package.loaded['<MODULE_NAME>'] = <MODULE_NAME>

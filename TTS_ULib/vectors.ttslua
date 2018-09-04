@@ -1,0 +1,717 @@
+------------------------------------------------------------------------------
+--- This module is a collection of functions that operate on vectors.
+--
+-- If you are unfamiliar with vector concepts, check out one, or all, of these
+-- references (or find your own favorite reference)...
+--
+-- * [Vectors in 3D Space at Interactive Mathematics](https://www.intmath.com/vectors/7-vectors-in-3d-space.php)
+-- * [Vectors in 2D & 3D Cartesian Coordinates](https://mathinsight.org/vectors_cartesian_coordinates_2d_3d)
+-- * [Vectors in Three Dimensional Space](https://www.wyzant.com/resources/lessons/math/calculus/multivariable_vectors/vectors3d)
+--
+-- There is no API here to create a vector, because in Tabletop Simulator (TTS)
+-- vectors are created by the TTS API itself, typically to represent a *position*,
+-- a *rotation*, or a *direction*.
+--
+-- In Tabletop Simulator (TTS) a vector is a table with a duplicate set of keys.
+-- One set of keys is composed of x,y,z while the other set of keys are
+-- inferred to be 1,2,3.
+--
+-- For example, a TTS position vector might be:
+--
+--      { 1.5, -2.5, 3.3, x=1.5, y=-2.5, z=3.3}
+--
+-- Note that this package does its calculations using the 1,2,3 keys; if a
+-- vector is provided with only x,y,z keys they will be duplicated to 1,2,3
+-- keys prior to any calculations.
+--
+-- **All vectors returned by this package** will have **both** sets of duplicate
+-- keys -- the **x,y,z** set and the **1,2,3** set.
+--
+-- So in TTS, a valid vector must meet the following criteria:
+--
+--      1. It must be a table
+--
+--      2. It must have keys and/or indexes in one of three configurations:
+--
+--          (A) table keys of 'x', 'y', 'z'
+--          (B) implied or specified indexes of 1,2,3
+--          (C) both (A) and (B)
+--
+-- If a parameter, not meeting the above criteria, is passed to a function in
+-- this package as a vector, an **assert** will be raised.
+--
+-- Note, as per the TTS API Spec...
+--
+-- Only one type of key, number or letter, is required. If both a are present
+-- in a Table, the numeric key is ignored and only the letter key is used
+-- (see [TTS API Spec](https://api.tabletopsimulator.com/types/#mixed-keys_1))
+--
+-- @module vectors
+-- @curator eruber
+-- @contributor tjakubo2
+-- @contributor Banbury
+-- @contributor eruber
+--
+-- This module was adapted from [tjakubo2's vector moduile on GitHub](https://github.com/tjakubo2/TTS_lib/tree/master/vectors)
+-- by the curator with a few ideas from [Banbury's vector module on GitHub](https://github.com/Banbury/tts_stdlib/tree/master/vectors).
+-- The vector validation, vector key duplication, and vector unit test code was developed solely by the curator.
+
+if type(package.loaded['vectors']) ~= 'table' then
+    package.loaded['vectors'] = nil
+end
+
+if not package.loaded['vectors'] then
+    vectors = {}
+    package.loaded['vectors'] = vectors
+
+    --- Module Version
+    vectors._VERSION = '1.0.0'
+
+    -- -----------------------------------------------------------------------
+    -- From luaunit.lua - https://github.com/bluebird75/luaunit
+    --[[ EPS is meant to help with Lua's floating point math in simple corner
+    cases like almostEquals(1.1-0.1, 1), which may not work as-is (e.g. on numbers
+    with rational binary representation) if the user doesn't provide some explicit
+    error margin.
+
+    The default margin used by almostEquals() in such cases is EPS; and since
+    Lua may be compiled with different numeric precisions (single vs. double), we
+    try to select a useful default for it dynamically. Note: If the initial value
+    is not acceptable, it can be changed by the user to better suit specific needs.
+
+    See also: https://en.wikipedia.org/wiki/Machine_epsilon
+    ]]
+    -- Start with double precision, 64 bit binary
+    vectors._EPSILON = 2^-52 -- = machine epsilon for "double", ~2.22E-16
+    if math.abs(1.1 - 1 - 0.1) > vectors._EPSILON then
+        -- rounding error is above EPSILON, assume single precision 32 bit binary
+        vectors._EPSILON = 2^-23 -- = machine epsilon for "float", ~1.19E-07
+    end
+
+    -- -----------------------------------------------------------------------
+    -- Private functions
+    -- -----------------------------------------------------------------------
+
+    -- Verify that the xyz keys are present in the vector table v
+    -- Returns three items:
+    --      r, a boolean, true if xyz keys exits
+    --      c, an integer, the count of the number of xyz keys available
+    --      keys, a table, whose keys are x,y,z and whose values are booleans
+    --          where true means the key is defined
+    vectors._check_xyz_keys = function(v)
+        local keys = { x = false, y = false, z = false }
+        local r
+        local c = 0
+        if v.x ~= nil then
+            keys.x = true
+            c = c + 1
+        end
+        if v.y ~= nil then
+            keys.y = true
+            c = c + 1
+        end
+        if v.z ~= nil then
+            keys.z = true
+            c = c + 1
+        end
+        r = keys.x and keys.y and keys.z
+        return r, c, keys
+    end
+
+    -- Verify that the 123 keys are present in the vector table v
+    -- Returns three items:
+    --      r, a boolean, true if 123 keys exits
+    --      c, an integer, the count of the number of 123 keys available
+    --      keys, a table, whose keys are indexes 1,2,3 and whose values are
+    --          booleans where true means the index key is defined
+    vectors._check_123_keys = function(v)
+        local keys = { false, false, false }
+        local r
+        local c = 0
+        if v[1] ~= nil then
+            keys[1] = true
+            c = c + 1
+        end
+        if v[2] ~= nil then
+            keys[2] = true
+            c = c + 1
+        end
+        if v[3] ~= nil then
+            keys[3] = true
+            c = c + 1
+        end
+        r = keys[1] and keys[2] and keys[3]
+        return r, c, keys
+    end
+
+    -- Emit error messages regarding what keys are missing
+    -- Returns an error string
+    vectors._emit_key_errors = function(c_123, keys_123, c_xyz, keys_xyz)
+        local err = ""
+        local zero_indexes = (c_123 == 0) and (c_xyz == 0)
+
+        if ((c_123 < 3) and (c_123 > 0)) or zero_indexes then
+            for k,val in pairs(keys_123) do
+                if not val then
+                    err = err .. string.format("Key: %s is missing!\n", k)
+                end
+            end
+        end
+        if ((c_xyz < 3) and (c_xyz > 0)) or zero_indexes then
+            for k,val in pairs(keys_xyz) do
+                if not val then
+                    err = err .. string.format("Key: %s is missing!\n", k)
+                end
+            end
+        end
+        return err
+    end
+
+    -- Given a vector v, duplicate its EXISTING xyz key values to the 123
+    -- key indexes. It is the caller's responsibility to insure that the
+    -- xyz keys exist.
+    -- Returns a vector with xyz and 123 key values identicial
+    vectors._dup_xyz_keys = function(v)
+        v[1] = v.x
+        v[2] = v.y
+        v[3] = v.z
+        return v
+    end
+
+    -- Given a vector v, duplicate its EXISTING 123 key values to the yxz
+    -- key indexes. It is the caller's responsibility to insure that the
+    -- 123 keys exist.
+    -- Returns a vector with xyz and 123 key values identicial
+    vectors._dup_123_keys = function(v)
+        v.x = v[1]
+        v.y = v[2]
+        v.z = v[3]
+        return v
+    end
+
+    -- Given a vector v, check that there is no mis-match between the xyz and
+    -- 123 key values; if there is a mis-match the xyz keys are used to re-initialize
+    -- the 123 keys, as per the TTS API spec.
+    -- See: https://api.tabletopsimulator.com/types/#mixed-keys_1
+    vectors._check_mismatch = function(v)
+        -- assumes that both 123 and xyz keys already exist
+        -- a mismatch favors xyz as per TTS spec, see:
+        -- https://api.tabletopsimulator.com/types/#mixed-keys_1
+        if v.x ~= v[1] then
+            v[1] = v.x
+        end
+        if v.y ~= v[2] then
+            v[2] = v.y
+        end
+        if v.z ~= v[3] then
+            v[3] = v.z
+        end
+        return v
+    end
+
+    -- Given a vector v, checks that its keys are valid and appropriatedly
+    -- duplicated if necessary.
+    -- Returns there items:
+    --      A flag, that is true if the vector's keys are valid
+    --      The vector, which might have had its keys duplicated
+    --      A table of error messages, or nil
+    vectors._check_keys = function(v)
+        local msgs = {}
+        local r
+        local r_123, c_123, keys_123 = vectors._check_123_keys(v)
+        local r_xyz, c_xyz, keys_xyz = vectors._check_xyz_keys(v)
+        if r_123 and (not r_xyz) then
+            -- Not really needed since we are doing our calcs with keys123
+            v = vectors._dup_123_keys(v)  -- This dups 123 keys to xyz keys
+        end
+        if r_xyz and (not r_123) then
+            v = vectors._dup_xyz_keys(v)  -- This dups xyz keys to 123 keys
+        end
+        if r_123 and r_xyz then
+            v = vectors._check_mismatch(v)
+        end
+        r = r_123 or r_xyz
+        if r then
+            return true, v, nil
+        else
+            table.insert(msgs, vectors._emit_key_errors(c_123, keys_123, c_xyz, keys_xyz))
+            return false, v, msgs
+        end
+    end
+
+    -- The top level vector validation function which, give a vector v,
+    -- validates it and duplicates any necessary key/value pairs.
+    -- Will raise an assert if the vector's key/value pairs are invalid.
+    -- Returns the validated vector if there are no errors, nil otherwise.
+    vectors._check_vector = function(v, func_name, arg_number)
+        assert(type(v) == 'table', 'vectors.'..func_name..': arg #'..tostring(arg_number)..' is not a table!')
+        local r, v, msgs = vectors._check_keys(v)
+        if not r then
+            local msg_txt = ""
+            if msgs ~= nil then
+                for k, msg in pairs(msgs) do
+                    msg_txt = msg_txt .. msg
+                end
+            end
+            local assert_txt = 'vector table key error, see below...\n' .. msg_txt
+            assert(r, assert_txt)
+            return nil
+        end
+        return v
+    end
+
+    -- -----------------------------------------------------------------------
+    -- Public functions from this point...
+    -- -----------------------------------------------------------------------
+
+    --- Sum of two vectors
+    -- @tparam vector v1
+    -- @tparam vector v2
+    -- @treturn vector Returns a new vector which is the sum of v1 and v2
+    vectors.add = function(v1, v2)
+        local v1 = vectors._check_vector(v1, 'add', 1)
+        local v2 = vectors._check_vector(v2, 'add', 2)
+
+        local out = {}
+        local k = 1
+        while v1[k] ~= nil and v2[k] ~= nil do
+            out[k] = v1[k]+v2[k]
+            k = k+1
+        end
+        return vectors._dup_123_keys(out)
+    end
+
+    --- Inverse of a vector
+    -- @tparam vector v
+    -- @treturn vector Returns the inverse of vector v
+    vectors.inverse = function(v)
+        local v = vectors._check_vector(v, 'inverse', 1)
+
+        local out = {}
+        local k = 1
+        while v[k] ~= nil do
+            out[k] = 1/v[k]
+            k = k+1
+        end
+        return vectors._dup_123_keys(out)
+    end
+
+    --- Multiply each element of a vector by a scalar factor
+    -- @tparam vector v
+    -- @tparam scalar factor Factor is a number to scale the vector by
+    -- @treturn vector Returns a vector scaled by factor
+    vectors.scale = function(v, factor)
+        local v = vectors._check_vector(v, 'scale', 1)
+        assert(type(factor) == 'number', 'vectors.scale: arg #2 not a number!')
+
+        local out = {}
+        local k = 1
+        while v[k] ~= nil do
+            out[k] = v[k]*factor
+            k = k+1
+        end
+        return vectors._dup_123_keys(out)
+    end
+
+    --- Multiply each element of a vector by an element from a factor vector.
+    -- (element-wise vector multiplication)
+    -- @tparam vector v
+    -- @tparam vector factor_v
+    -- @treturn vector Returns a vector scaled by vector factor_v
+    vectors.scaleEach = function(v, factor_v)
+        local v = vectors._check_vector(v, 'scaleEach', 1)
+        local factor_v = vectors._check_vector(factor_v, 'scaleEach', 2)
+
+        local out = {}
+        local k = 1
+        while v[k] ~= nil and factor_v[k] ~= nil do
+            out[k] = v[k]*factor_v[k]
+            k = k+1
+        end
+        return vectors._dup_123_keys(out)
+    end
+
+    --- Length of a vector in the x-z plane (ignoring height, y)
+    -- @tparam vector v
+    -- @treturn scalar Returns length of vector v in the x-z plane
+    vectors.length2D = function(v)
+        local v = vectors._check_vector(v, 'length2D', 1)
+
+        return math.sqrt(v[1]*v[1] + v[3]*v[3])
+    end
+
+    --- Length of vector in all three dimensions x,y,z
+    -- @tparam vector v
+    -- @treturn scalar Returns length of vector v using all three dimensions
+    vectors.length = function(v)
+        local v = vectors._check_vector(v, 'length', 1)
+
+        return math.sqrt(v[1]*v[1] + v[2]*v[2] + v[3]*v[3])
+    end
+
+    --- An alias for **vectors.length**
+    -- Length of vector in all three dimensions x,y,z
+    -- @tparam vector v
+    -- @treturn scalar Returns length of vector v using all three dimensions
+    vectors.length3D = function(v)
+        return vectors.length(v)
+    end
+
+    --- Compute the vector between two position vectors, starting at the fromVector and going to the toVector.
+    -- @tparam vector fromVector A vector from which the computed vector starts
+    -- @tparam vector toVector A vector from which the computed vector ends
+    -- @treturn vector Returns a vector that points from the fromVector to the toVector.
+    vectors.between = function(fromVector, toVector)
+        local from_vector = vectors._check_vector(fromVector, 'between', 1)
+        local to_vector = vectors._check_vector(toVector, 'between', 2)
+
+        return vectors.add(to_vector, vectors.scale(from_vector, -1))
+    end
+
+    --- Distance in the x-z plane between two positions
+    -- @tparam vector|object p1 A position vector or a TTS object from which a position can be queried
+    -- @tparam vector|object p2 A position vector or a TTS object from which a position can be queried
+    -- @treturn scalar The distance between positions p1 and p2 in the x-z plane
+    vectors.distance2D = function(p1, p2)
+        assert(type(p1) == 'table' or type(p1) == 'userdata', 'vectors.distance2D: arg #1 not a table/object!')
+        assert(type(p2) == 'table' or type(p2) == 'userdata', 'vectors.distance2D: arg #2 not a table/object!')
+        if type(p1) == 'userdata' then
+            p1 = p1.getPosition()
+        end
+        if type(p2) == 'userdata' then
+            p2 = p2.getPosition()
+        end
+
+        local v1 = vectors._check_vector(p1, 'distance2D', 1)
+        local v2 = vectors._check_vector(p2, 'distance2D', 2)
+
+        return vectors.length2D(vectors.between(v1, v2))
+    end
+
+    --- 3D distance between two positions
+    -- @tparam vector|object p1 A position vector or a TTS object from which a position can be queried
+    -- @tparam vector|object p2 A position vector or a TTS object from which a position can be queried
+    -- @treturn scalar The 3D distance between positions p1 and p2
+    vectors.distance = function(p1, p2)
+        assert(type(p1) == 'table' or type(p1) == 'userdata', 'vectors.distance: arg #1 not a table/object!')
+        assert(type(p2) == 'table' or type(p2) == 'userdata', 'vectors.distance: arg #2 not a table/object!')
+        if type(p1) == 'userdata' then
+            p1 = p1.getPosition()
+        end
+        if type(p2) == 'userdata' then
+            p2 = p2.getPosition()
+        end
+
+        local v1 = vectors._check_vector(p1, 'distance', 1)
+        local v2 = vectors._check_vector(p2, 'distance', 2)
+
+        return vectors.length(vectors.between(v1, v2))
+    end
+
+    --- An alias for **vectors.distance**
+    -- 3D distance between two positions
+    -- @tparam vector|object p1 A position vector or a TTS object from which a position can be queried
+    -- @tparam vector|object p2 A position vector or a TTS object from which a position can be queried
+    -- @treturn scalar The 3D distance between positions p1 and p2
+    vectors.distance3D = function(p1, p2)
+        return vectors.distance(p1, p2)
+    end
+
+    -- --- Translate a vector to a printable string
+    -- -- @tparam vector v The vector to convert into a printable string
+    -- -- @treturn string The string representation of the vector, v.
+    -- vectors.toString = function(v)
+    --     return (string.format("{ %.2f, %.2f, %.2f }", v.x, v.y, v.z))
+    -- end
+
+    --- Translate a vector to a printable string
+    -- @tparam vector v The vector to convert into a printable string
+    -- @tparam table options A table of options for controlling string output as shown below.
+    --      options.prefix  - a string to prefix to the vector's string representation. Default is nil.
+    --      options.keys    - a boolean if true only output the xyz key values of the vector. Default is true.
+    --      options.indexes - a boolean If true only output the 1,2,3 index key values of the vector. Default is false.
+    --      options.precision - an integer between 1 and 6 specifying the number of places of precision to output. Default is 2.
+    -- @treturn string The string representation of the vector, v.
+    -- If both output_keys and output_indexes are false, set output_keys = true.
+    vectors.tostring = function(v, options)
+        local v = vectors._check_vector(v, 'tostring', 1)
+        assert(type(options) == 'table' or type(options) == 'nil', 'vectors.tostring: arg #2 not a table!')
+
+        if type(options) == 'nil' then options = {} end
+        setmetatable(options, {__index={prefix=nil, keys=true, indexes=false, precision=2}})
+
+        assert(type(options.prefix) == 'string' or type(options.prefix) == 'nil', "vectors.tostring: options table 'prefix' field must be a string or nil!")
+        assert(type(options.keys) == 'boolean', "vectors.tostring: options table 'keys' field must be a boolean!")
+        assert(type(options.indexes) == 'boolean', "vectors.tostring: options table 'indexes' field must be a boolean!")
+        assert(type(options.precision) == 'number', "vectors.tostring: options table 'precision' field must be an number between 1 and 6!")
+
+        if not options.keys and not options.indexes then options.keys = true end
+        if options.precision < 1 then options.precision = 1 end
+        if options.precision > 6 then options.precision = 6 end
+
+        local out = '{'
+        if options.prefix ~= nil then
+            out = options.prefix .. ': ' .. out
+        end
+
+        local format_str = "%." .. string.format("%d", options.precision) .. "f"
+
+        if options.indexes then
+            -- Only output indexed values, 1,2,3, not keyed values
+            local k = 1
+            while v[k] ~= nil do
+                -- out = out .. math.round(v[k], 3) .. ', '
+                out = out .. string.format(format_str, v[k]) .. ', '
+                k = k+1
+            end
+        end
+
+        if options.keys then
+            format_str = "%s=" .. format_str
+            -- only output keyed values, x,y,z, not indexed values
+            for _,k in pairs({'x', 'y', 'z'}) do
+                if v[k] ~= nil then
+                    -- out = out .. math.round(v[k], 3) .. ', '
+                    out = out .. string.format(format_str, k, v[k]) .. ', '
+                end
+            end
+
+        end
+
+        out = out:sub(1,-3) .. '}'
+
+        return out
+    end
+
+    --- Print a vector's string representation
+    -- @tparam vector v The vector to print
+    -- @tparam table options A table of options for controlling string output as shown below.
+    --      options.prefix  - a string to prefix to the vector's string representation. Default is nil.
+    --      options.keys    - a boolean if true only output the xyz key values of the vector. Default is true.
+    --      options.indexes - a boolean If true only output the 1,2,3 index key values of the vector. Default is false.
+    --      options.precision - an integer between 1 and 6 specifying the number of places of precision to output. Default is 2.
+    -- @treturn string The string representation of the vector, v.
+    -- If both output_keys and output_indexes are false, set output_keys = true.
+    vectors.print = function(v, options)
+        print(vectors.tostring(v, options))
+    end
+
+    --- Dot product
+    -- @tparam vector v1
+    -- @tparam vector v2
+    -- @treturn scalar Returns the dot product of vectors v1 and v2
+    vectors.dotProd = function(v1, v2)
+        local v1 = vectors._check_vector(v1, 'dotProd', 1)
+        local v2 = vectors._check_vector(v2, 'docProd', 2)
+
+        local sum = 0
+        local k = 1
+        while v1[k] ~= nil and v2[k] ~= nil do
+            sum = sum + v1[k]*v2[k]
+            k = k+1
+        end
+        return sum
+    end
+
+    --- Compares two vectors element by element.
+    -- Fails if length is uneven,
+    -- @tparam vector v1 A vector to compare with vector v2
+    -- @tparam vector v2 A vector to compare with vector v1
+    -- @treturn boolean Returns the vectors v1 and v2 are identical.
+    vectors.compare = function(v1, v2)
+        local v1 = vectors._check_vector(v1, 'compare', 1)
+        local v2 = vectors._check_vector(v2, 'compare', 2)
+        if #v1 ~= #v2 then
+            return false
+        end
+        local k = 1
+        while v1[k] ~= nil and v2[k] ~= nil do
+            if v1[k] ~= v2[k] then
+                return false
+            end
+            k = k+1
+        end
+        return true
+    end
+
+    --- Normalize
+    -- Returns a new vector with the same direction but with a length of one unit.
+    -- @tparam vector v A vector to normalize
+    -- @treturn vector A new normalized Vector
+    vectors.normalize = function(v)
+        local v = vectors._check_vector(v, 'normalize', 1)
+        local len = vectors.length(v)
+        v[1] = v[1] / len
+        v[2] = v[2] / len
+        v[3] = v[3] / len
+        return vectors._dup_123_keys(v)
+    end
+
+    --- Determine if a vector is a zero vector
+    -- @tparam vector v A vector to test if it is a zero length vector
+    -- @tparam number margin The margin of error to allow when determining if a vector is of zero length
+    -- @treturn boolean Returns true if vector v is a zero vector
+    vectors.isZero = function(v, margin)
+        local v = vectors._check_vector(v, 'isZero', 1)
+        local margin = margin or vectors._EPSILON
+        assert(type(margin) == 'number' and (margin > 0), "vectors.isZero: arg #2 margin must be a number greater than zero!")
+
+        return math.abs(0 - vectors.length(v)) <= margin
+    end
+
+    --- Convert a vector to unit vector in the same direction
+    -- Note, this function will return a zero vector when given a vector of length zero
+    -- since division by zero is undefined.
+    -- @tparam vector v A vector to convert into a unit vector
+    -- @treturn vector The unit vector of vector v
+    vectors.unit = function(v)
+        local v = vectors._check_vector(v, 'unit', 1)
+        local margin = 0.00001
+        if vectors.isZero(v, margin) then
+            return v
+        end
+        return vectors.scale(v, 1/vectors.length(v))
+    end
+
+    --- Angle between vectors in radians
+    -- @tparam vector v1 A vector
+    -- @tparam vector v2 A vector
+    -- @treturn radians Returns the angle in radians between vectors v1 and v2.
+    vectors.angleRadians = function(v1, v2)
+        local v1 = vectors._check_vector(v1, 'angleRadians', 1)
+        local v2 = vectors._check_vector(v2, 'angleRadians', 2)
+
+        v1 = vectors.normalize(v1)
+        v2 = vectors.normalize(v2)
+        return math.acos( vectors.dotProd(v1, v2) / (vectors.length(v1)*vectors.length(v2)) )
+    end
+
+    --- Angle between vectors in radians an alias of **vectors.angleRadians**.
+    -- @tparam vector v1 A vector
+    -- @tparam vector v2 A vector, if not specified, use vector {1,0,0}
+    -- @treturn radians Returns the angle in radians between vectors v1 and v2.
+    vectors.angleRadians3D = function(v1, v2)
+        return vectors.angleRadians(v1, v2)
+    end
+
+    --- Angle between vectors in radians, in the x-z plane
+    -- @tparam vector v1 A vector
+    -- @tparam vector v2 A vector
+    -- @treturn radians Returns the angle in radians in the x-z plane between vectors v1 and v2.
+    vectors.angleRadians2D = function(v1, v2)
+        local v1 = vectors._check_vector(v1, 'angleRadians2D', 1)
+        local v2 = vectors._check_vector(v2, 'angleRadians2D', 2)
+        return ( math.atan2(v2[3], v2[1]) - math.atan2(v1[3], v1[1]) )
+    end
+
+    --- Same as **vectors.angleRadians** but in degrees
+    -- @tparam vector v1 A vector
+    -- @tparam vector v2 A vector
+    -- @treturn degrees Returns the angle in degrees between vectors v1 and v2.
+    vectors.angleDegrees = function(v1, v2)
+        local v1 = vectors._check_vector(v1, 'angleDegrees', 1)
+        local v2 = vectors._check_vector(v2, 'angleDegrees', 2)
+        return math.deg(vectors.angleRadians(v1, v2))
+    end
+
+    --- Same as **vectors.angleRadians** but in degrees, alias for **vectors.angleDegrees**.
+    -- @tparam vector v1 A vector
+    -- @tparam vector v2 A vector, if not specified, use vector {1,0,0}
+    -- @treturn degrees Returns the angle in degrees between vectors v1 and v2.
+    vectors.angleDegrees3D = function(v1, v2)
+        return vectors.angleDegrees(v1, v2)
+    end
+
+    --- Angle between vectors in degrees, in the x-z plane
+    -- @tparam vector v1 A vector
+    -- @tparam vector v2 A vector
+    -- @treturn degrees Returns the angle in degrees in the x-z plane between vectors v1 and v2.
+    vectors.angleDegrees2D = function(v1, v2)
+        local v1 = vectors._check_vector(v1, 'angleDegrees2D', 1)
+        local v2 = vectors._check_vector(v2, 'angleDegrees2D', 2)
+        return math.deg(vectors.angleRadians2D(v1, v2))
+    end
+
+    --- Compute a half-length vector pointing between two positions
+    -- @tparam vector|object p1 A position vector or a TTS object from which a position can be queried
+    -- @tparam vector|object p2 A position vector or a TTS object from which a position can be queried
+    -- @treturn vector Returns a half-length vector pointing between p1 and p2
+    -- See vectors.between() for a function that returns the full length vector.
+    vectors.middle = function(p1, p2)
+        assert(type(p1) == 'table' or type(p1) == 'userdata', 'vectors.middle: arg #1 not a table/object!')
+        assert(type(p2) == 'table' or type(p2) == 'userdata', 'vectors.middle: arg #2 not a table/object!')
+
+        if type(p1) == 'userdata' then
+            p1 = p1.getPosition()
+        end
+        if type(p2) == 'userdata' then
+            p2 = p2.getPosition()
+        end
+        local v1 = vectors._check_vector(p1, 'middle', 1)
+        local v2 = vectors._check_vector(p2, 'middle', 2)
+
+        return vectors.add(v1, vectors.scale(vectors.between(v1, v2), 0.5))
+    end
+
+    --- Subtract two vectors, v1 - v2
+    -- @tparam vector v1 A vector
+    -- @tparam vector v2 A vector
+    -- @treturn vector Returns a vector that is the result of subtracting vector v2 from vector v1.
+    vectors.sub = function(v1, v2)
+        local v1 = vectors._check_vector(v1, 'sub', 1)
+        local v2 = vectors._check_vector(v2, 'sub', 2)
+        return vectors.add(v1, vectors.scale(v2, -1))
+    end
+
+    --- Reverse the direction of a vector
+    -- @tparam vector v A vector
+    -- @treturn vector Returns a vector pointing in the opposite direction of vector v.
+    vectors.reverse = function(v)
+        local v = vectors._check_vector(v, 'reverse', 1)
+        return vectors.scale(v, -1)
+    end
+
+    --- Scale a vector to have specified length
+    -- Note that a negative length will also reverse the direction of the vector.
+    -- @tparam vector v A vector that will have its length changed to len.
+    -- @tparam number len The new length to give to vector v.
+    -- @treturn vector Returns a vector that has its length set to len.
+    vectors.setLength = function(v, len)
+        local v = vectors._check_vector(v, 'setLength', 1)
+        assert(type(len) == 'number', 'vectors.setLength: arg #1 not a number!')
+        return vectors.scale(v, len/vectors.length(v))
+    end
+
+    --- Rotation of a 3D vector around the y-axis by a scalar radian quantity.
+    -- A positive radian quantity rotates clock-wise looking down the positive y-axis.
+    -- @tparam vector v A vector to rotate
+    -- @tparam radians r A rotation factor
+    -- @treturn vector Returns a vector rotated on its y-axis by r radians
+    vectors.rotateRadians = function(v, r)
+        local v = vectors._check_vector(v, 'rotateRadians', 1)
+        assert(type(r) == 'number', 'vectors.rotateRadians: arg #2 not a number!')
+
+        local newX = math.cos(r) * v[1] + math.sin(r) * v[3]
+        local newZ = math.sin(r) * v[1] * -1 + math.cos(r) * v[3]
+        local out = {newX, v[2], newZ}
+        local k=4
+        while v[k] ~= nil do
+            table.insert(out, v[k])
+            k = k+1
+        end
+        return vectors._dup_123_keys(out)
+    end
+
+    --- Rotation of a 3D vector around the y-axis, by a scalar degrees quantity
+    -- A positive degrees quantity rotates clock-wise looking down the positive y-axis.
+    -- @tparam vector v A vector to rotate
+    -- @tparam degrees d A rotation factor
+    -- @treturn vector Returns a vector rotated on its y-axis by d degrees
+   vectors.rotateDegrees = function(v, d)
+        local v = vectors._check_vector(v, 'rotateDegrees', 1)
+        assert(type(d) == 'number', 'vectors.rotateDegrees: arg #2 not a number!')
+
+        local r = math.rad(d)
+        return vectors.rotateRadians(v, r)
+    end
+end

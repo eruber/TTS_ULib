@@ -82,5 +82,6 @@ LDoc comes with three extra themes; ‘pale’ for those who like whitespace,
 Since 1.3, LDoc allows the use of colons instead of @. However, you must either
 use the --colon flag or set colon=true in your config.ld.
 
+
 -- E.R. Uber July-Aug 2018
 

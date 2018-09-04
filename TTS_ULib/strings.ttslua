@@ -1,0 +1,46 @@
+--- A collection of functions that operate on strings
+-- @module strings
+-- @curator <NAME> or @author <NAME>
+
+if type(package.loaded['strings']) ~= 'table' then
+    package.loaded['strings'] = nil
+end
+
+if not package.loaded['strings'] then
+    strings = {}
+    package.loaded['strings'] = strings
+
+    -- >> split
+
+    --- Splits the string, s, into substrings wherever pattern, p, occurs.
+    -- @tparam string s String to be split
+    -- @tparam string p Pattern used to split string
+    -- @treturn table A table of sub-strings or, if no pattern match, nil
+    strings.split = function(s, p)
+        local temp = {}
+        local index = 0
+        local last_index = string.len(s)
+
+        while true do
+            local i, e = string.find(s, p, index)
+
+            if i and e then
+                local next_index = e + 1
+                local word_bound = i - 1
+                table.insert(temp, string.sub(s, index, word_bound))
+                index = next_index
+            else
+                if index > 0 and index <= last_index then
+                    table.insert(temp, string.sub(s, index, last_index))
+                elseif index == 0 then
+                    temp = nil
+                end
+                break
+            end
+        end
+
+        return temp
+    end
+    -- << split
+
+end

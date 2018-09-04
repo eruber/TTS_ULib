@@ -1,0 +1,224 @@
+------------------------------------------------------------------------------
+-- A set class
+-- @classmod Set
+-- @author eruber
+-- @usage
+-- Create two sets, a and b, ...
+-- a = Set({'red', 'green', 'blue'})
+-- b = Set({'purple', 'blue', 'white'})
+--
+-- Supported set operators that return a new set
+--
+--      Union: c = a + b
+--
+--      Intersection: i = a * b
+--
+--      Difference: d = a - b
+--
+--      Symmetric Difference: s = a ^ b
+--
+-- Supported set relational operators that return a boolean
+--
+--      (a == b) --> Returns true if set a is equivalent to set b
+--      (a % b)  --> Returns true if set a is disjoint with set b
+--      (a < b)  --> Returns true if set a is a subset of set b
+--      -a       --> Returns true if set a is empty
+--
+-- Supported Length Operator that returns an integer
+--
+--      #a  --> Returns the integer length of set a
+--
+-- See Manual for more details.
+--
+-- Based on some code in the Lua book at https://www.lua.org/pil/13.1.html
+-- with additions by eruber
+if not package.loaded['Set'] then
+    Set = {}
+    package.loaded['Set'] = Set
+
+    setmetatable(Set, {
+        __call = function(cls, ...) return cls.new(...) end,
+        })
+
+    Set.mt = {}
+
+    --- Set Constructor, returns an instance of the Set object.
+    -- Can also be invoked with new as in, Set().
+    -- @tparam table t An array/list of elements to initialize the set with, as in, {'red', 77, 'green', 3.14}
+    -- @return An instance of a Set object
+    function Set.new(t)
+        local set = {}
+        setmetatable(set, Set.mt)
+        for _, l in pairs(t or {}) do set[l] = true end
+        return set
+    end
+
+    -- The following operations are supported between two Set objects, a and b:
+    --        Union: a + b
+    -- Intersection: a * b
+
+
+    -- The type name of this Set object
+    local SET_TYPE_NAME = 'ULib_Set'
+
+    -- Private function allowing us to distinguish a type table from
+    -- the type of this Set object
+    function Set._metatype(value)
+        local value_mt = getmetatable(value)
+        if value_mt then
+            local type_ = value_mt.__type
+            if type_ then
+                return type_
+            else
+                -- return the normal Lua type
+                return type(value)
+            end
+        else
+            -- return the normal Lua type
+            return type(value)
+        end
+    end
+
+    -- For a variant input, x, normalize it to a Set object. The variant x can
+    -- be a table (of elements), already a Set, or a single value of an element
+    -- that is not in a table.
+    -- This function returns a Set object.
+    function Set._normalize2Set(x)
+        local nSet = {}
+
+        local _type = Set._metatype(x)
+
+        if _type == SET_TYPE_NAME then
+            -- nothing to do, already a Set object
+            nSet = x
+        elseif _type == 'table' then
+
+            -- a table of elements, make them a Set object
+            nSet = Set.new(x)
+        else
+            -- a single variable, put it in a table, make it a Set object
+            nSet = Set.new({x})
+        end
+        return nSet
+    end
+
+    -- Returns union of sets a and b
+    function Set.union(a, b)
+        local res = Set.new{}
+        a = Set._normalize2Set(a)
+        b = Set._normalize2Set(b)
+        for k in pairs(a) do res[k] = true end
+        for k in pairs(b) do res[k] = true end
+        return res
+    end
+
+    -- Returns intersection of sets a and b
+    function Set.intersection(a, b)
+        local res = Set.new{}
+        a = Set._normalize2Set(a)
+        b = Set._normalize2Set(b)
+        for k in pairs(a) do
+            res[k] = b[k]
+        end
+        return res
+    end
+
+    -- Returns difference of sets a and b
+    function Set.difference(a, b)
+        local res = Set.new{}
+        a = Set._normalize2Set(a)
+        b = Set._normalize2Set(b)
+        for k,v in pairs(a) do
+            if b[k] == nil then res[k] = true end
+        end
+        return res
+    end
+
+    -- Returns symmetric difference of sets a and b
+    function Set.symmetric_difference(a, b)
+        a = Set._normalize2Set(a)
+        b = Set._normalize2Set(b)
+        return (a - b) + (b -a)
+    end
+
+    function Set.isEmpty(set)
+        return next(set) == nil
+    end
+
+    function Set.disjoint(a, b)
+        -- If intersection is empty
+        -- return next(a * b) == nil
+        return Set.isEmpty(a * b)
+    end
+
+    function Set.eq(a, b)
+        a = Set._normalize2Set(a)
+        b = Set._normalize2Set(b)
+        return a <= b and b <= a
+    end
+
+    function Set.le(a, b)
+        a = Set._normalize2Set(a)
+        b = Set._normalize2Set(b)
+        for k in pairs(a) do
+            if not b[k] then return false end
+        end
+        return true
+    end
+
+    function Set.lt(a, b)
+        a = Set._normalize2Set(a)
+        b = Set._normalize2Set(b)
+        return a <= b and not (b <= a)
+    end
+
+    function Set.tostring(set)
+        local s = "{"
+        local sep = ""
+        for e in pairs(set) do
+            s = s .. sep .. e
+            sep = ", "
+        end
+        return s .. "}"
+    end
+
+    function Set.concat(a, b)
+        local out = ""
+        if Set._metatype(a) == SET_TYPE_NAME then
+            out = out .. Set.tostring(a)
+        else
+            out = out .. a
+        end
+        if Set._metatype(b) == SET_TYPE_NAME then
+            out = out .. Set.tostring(b)
+        else
+            out = out .. b
+        end
+        return out
+    end
+
+    function Set.len(set)
+        local count = 0
+        for _ in pairs(set) do count = count + 1 end
+        return count
+    end
+
+    -- Populate the metatable
+    Set.mt.__type = SET_TYPE_NAME
+    Set.mt.__tostring = Set.tostring
+    Set.mt.__add = Set.union
+    Set.mt.__mul = Set.intersection
+    Set.mt.__sub = Set.difference
+    Set.mt.__pow = Set.symmetric_difference
+    Set.mt.__mod = Set.disjoint
+    Set.mt.__le = Set.le
+    Set.mt.__lt = Set.lt
+    Set.mt.__len = Set.len
+    Set.mt.__eq = Set.eq
+    Set.mt.__unm = Set.isEmpty
+    Set.mt.__concat = Set.concat
+
+    -- hide the metatable, if we do this our custom __type entry is not visible
+    -- Set.mt.__metatable = {}
+
+end

@@ -1,0 +1,53 @@
+--- Change the scope of methods
+-- @module scope
+-- @author onelivesleft
+-- @curator eruber
+
+-- See https://github.com/onelivesleft/Utils/blob/master/scope.ttslua
+
+if not package.loaded.scope then
+    package.loaded.scope = {}
+    for label, object in pairs(_G) do
+        if type(object) == 'table' then package.loaded.scope[label] = true end
+    end
+
+    --- Globalize methods.
+    --
+    -- Call without parameters to globalize all methods in modules inserted after this one.
+    -- Alternatively call with a module name to globalize that module,
+    -- or specify methods in the module with patterns.
+    -- @param module An optional module name
+    function globalize(module, ...)
+        local patterns = {...}
+        if module == nil then
+            for label, object in pairs(_G) do
+                if not package.loaded.scope[label] and type(object) == 'table' then
+                    for k, v in pairs(object) do
+                        if type(v) == 'function' and k:sub(1, 1) ~= '_' then
+                            _G[k] = v
+                        end
+                    end
+                    package.loaded.scope[label] = true
+                end
+            end
+        elseif patterns then
+            local to_do = {}
+            for k, v in pairs(module) do
+                for _, pattern in {...} do
+                    if not to_do[k] and type(v) == 'function' and k:match(pattern) and k:sub(1, 1) ~= '_' then
+                        to_do[k] = v
+                    end
+                end
+            end
+            for k, v in pairs(to_do) do
+                _G[k] = v
+            end
+        else
+            for k, v in pairs(module) do
+                if type(v) == 'function' and k:sub(1, 1) ~= '_' then
+                    _G[k] = v
+                end
+            end
+        end
+    end
+end

@@ -1,0 +1,165 @@
+-----------------------------------------------------------------------------
+-- A logging class
+-- @classmod Logger
+-- @usage
+-- logr = Logger()
+-- logr.debug("This is a debug log message")  -- no ouput since level is error
+-- logr.info("This is an info log message")   -- no ouput since level is error
+-- logr.error("This is an error log message") -- produces output
+-- logr.setLogLevel("debug") -- from now on logr.debug() and logr.info() calls will produce output
+
+--- Logger constructor
+-- @tparam string level Logging level must be one of "debug", "info", "warn", "error"
+-- @tparam boolean color_level_only If true only level name is colored; otherwise, entire message is colored
+-- @return An instance of a logger object
+function Logger(level, color_level_only)
+    -- constructor inputs
+    -- private fields
+    local level = level or "error"
+    local color_level_only = color_level_only or false
+
+    -- new instance
+    local self = {
+        -- public fields
+        log_level = level,
+        color_just_level = color_level_only,
+    }
+    -- private fields
+    local log_level_default = "error"
+
+    local legal_level_names = {
+        debug = true,
+        info = true,
+        warning = true,
+        warn = true,
+        ["error"] = true,
+        err = true,
+        off = true,
+        stop = true,
+    }
+
+    local level_map = {
+        debug = 0,
+        info = 1,
+        warning = 2,
+        warn = 2,
+       ["error"] = 3,
+        err = 3,
+        off = 4,
+        stop = 5,
+    }
+    local lvl = nil
+
+    function _set_lvl()
+        -- Integer associated with level name
+        if level_map[self.log_level] ~= nil then
+            lvl = level_map[self.log_level]
+        else
+            lvl = level_map[log_level_default]
+        end
+    end
+
+    _set_lvl()
+
+    local colors = {
+        white = "[FFFFFF]",
+        red = "[FF0000]",
+        orange = "[F2B926]",
+        yellow = "[F5FF33]",
+        blue = "[2966C7]",
+        green = "[00FF00]",
+        black = "[000000]",
+        remove = "[-]",
+    }
+    local levels = {
+        debug = colors.green,
+        info = colors.white,
+        warn = colors.orange,
+        ["error"] = colors.red,
+    }
+
+    -- Logger API starts here...
+
+    --- Returns current logging level
+    function self.getLogLevel()
+        -- Or you could access it directly, it is public after all
+        return self.log_level
+    end
+
+    --- Set logging level
+    -- @tparam string new_log_level Is either "debug", "info", "warning", "error"
+    function self.setLogLevel(new_log_level)
+        local result
+        if legal_level_names[new_log_level] then
+            self.log_level = new_log_level
+            result = true
+        else
+            result = false
+            self.log_loglevel = log_level_default
+        end
+        _set_lvl()
+        return result
+    end
+
+    function self._log(level, msg, ...)
+        if color_level_only then
+            log_str = levels[level] .. level .. "[-]: " .. string.format(msg, ...)
+        else
+            log_str = levels[level] .. level .. ": " .. string.format(msg, ...) .. "[-]"
+        end
+        print(log_str)
+    end
+
+    --- Log a debug message
+    -- @tparam string msg Formatted message text
+    -- @param ... remaining arguments
+    function self.debug(msg, ...)
+        if lvl <= level_map["debug"] then
+            self._log("debug", msg, ...)
+        end
+    end
+
+    --- Log an info message
+    -- @tparam string msg Formatted message text
+    -- @param ... remaining arguments
+    function self.info(msg, ...)
+        if lvl <= level_map["info"] then
+            self._log("info", msg, ...)
+        end
+    end
+
+    --- Log an warning message
+    -- @tparam string msg Formatted message text
+    -- @param ... remaining arguments
+    function self.warn(msg, ...)
+        if lvl <= level_map["warn"] then
+            self._log("warn", msg, ...)
+        end
+    end
+
+    --- Log an warning message
+    -- @tparam string msg Formatted message text
+    -- @param ... remaining arguments
+    function self.warning(msg, ...)
+        self.warn(msg, ...)
+    end
+
+    -- Log an error message
+    -- @tparam string msg Formatted message text
+    -- @param ... remaining arguments
+    function self.error(msg, ...)
+        if lvl <= level_map["error"] then
+            self._log("error", msg, ...)
+        end
+    end
+
+    -- Log an error message
+    -- @tparam string msg Formatted message text
+    -- @param ... remaining arguments
+    function self.err(msg, ...)
+        self.error(msg, ...)
+    end
+
+    -- return instance
+    return self
+end
