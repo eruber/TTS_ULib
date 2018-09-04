@@ -18,3 +18,4 @@ kind_names={topic='Manual'}
 alias("p", "param")
 not_luadoc = true
 wrap = true
+sort = true
