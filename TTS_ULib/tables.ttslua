@@ -2,7 +2,7 @@
 -- @module tables
 -- @curator <NAME> or @author <NAME>
 
-if type(package.loaded(['tables']) ~= 'table' then
+if type(package.loaded['tables']) ~= 'table' then
     package.loaded['tables'] = nil
 end
 
@@ -24,7 +24,7 @@ if not package.loaded['tables'] then
         if type(t1) == 'table' and type(t2) == 'table' then
             for k, v in pairs(t2) do
                 if (type(v) == "table") and (type(t1[k] or false) == "table") then
-                    merge_tables(t1[k], t2[k])
+                    tables.merge(t1[k], t2[k])
                 else
                     if t1[k] ~= nil then
                         -- would overwrite key, k, in t1
