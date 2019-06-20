@@ -2,7 +2,7 @@
 -- @module tables
 -- @curator <NAME> or @author <NAME>
 
-if type(package.loaded(['tables']) ~= 'table' then
+if type(package.loaded['tables']) ~= 'table' then
     package.loaded['tables'] = nil
 end
 
